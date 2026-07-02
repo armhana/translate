@@ -1,0 +1,96 @@
+// Sprecher.swift
+// Sprachausgabe mit AVSpeechSynthesizer inkl. Personal Voice (eigene Stimme)
+// und einfacher Spul-Logik über Satzgrenzen.
+// ACHTUNG: Ungetestetes Starterprojekt — siehe README_iOS.md.
+
+import AVFoundation
+import SwiftUI
+
+@MainActor
+final class Sprecher: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+    @Published var spielt = false
+
+    private let synth = AVSpeechSynthesizer()
+    private var saetze: [String] = []
+    private var index = 0
+    private var sprache = "de"
+    private var eigeneStimme = true
+
+    override init() {
+        super.init()
+        synth.delegate = self
+        // Zugriff auf die Personal Voice des Nutzers anfragen (iOS 17+)
+        AVSpeechSynthesizer.requestPersonalVoiceAuthorization { _ in }
+    }
+
+    func playPause(text: String, sprache: String, eigeneStimme: Bool) {
+        if synth.isSpeaking && !synth.isPaused {
+            synth.pauseSpeaking(at: .word)
+            spielt = false
+            return
+        }
+        if synth.isPaused {
+            synth.continueSpeaking()
+            spielt = true
+            return
+        }
+        // Neu starten: Text in Sätze teilen, damit Spulen möglich ist
+        self.sprache = sprache
+        self.eigeneStimme = eigeneStimme
+        saetze = text.split(whereSeparator: { ".!?".contains($0) })
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        index = 0
+        sprichAktuellenSatz()
+    }
+
+    func stopp() {
+        synth.stopSpeaking(at: .immediate)
+        index = 0
+        spielt = false
+    }
+
+    /// „⏪ 10 s“: ein Satz zurück (Satzgrenzen als praktikable Näherung)
+    func spuleZurueck() { springe(um: -1) }
+    /// „10 s ⏩“: ein Satz vor
+    func spuleVor() { springe(um: +1) }
+
+    private func springe(um schritt: Int) {
+        guard !saetze.isEmpty else { return }
+        synth.stopSpeaking(at: .immediate)
+        index = min(max(0, index + schritt), saetze.count - 1)
+        sprichAktuellenSatz()
+    }
+
+    private func sprichAktuellenSatz() {
+        guard index < saetze.count else { spielt = false; return }
+        let utterance = AVSpeechUtterance(string: saetze[index])
+        utterance.voice = passendeStimme()
+        synth.speak(utterance)
+        spielt = true
+    }
+
+    private func passendeStimme() -> AVSpeechSynthesisVoice? {
+        if eigeneStimme {
+            // Personal Voice: die vom Nutzer selbst trainierte Stimme
+            if let pv = AVSpeechSynthesisVoice.speechVoices()
+                .first(where: { $0.voiceTraits.contains(.isPersonalVoice) }) {
+                return pv
+            }
+        }
+        return AVSpeechSynthesisVoice(language: sprache)
+    }
+
+    // Nächsten Satz anschließen
+    nonisolated func speechSynthesizer(_ s: AVSpeechSynthesizer,
+                                       didFinish utterance: AVSpeechUtterance) {
+        Task { @MainActor in
+            index += 1
+            if index < saetze.count && spielt {
+                sprichAktuellenSatz()
+            } else {
+                spielt = false
+            }
+        }
+    }
+}
