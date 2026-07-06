@@ -24,10 +24,15 @@ SAMPLE_RATE = 16000  # Whisper erwartet 16 kHz mono
 
 
 class SpeechToText:
-    """faster-whisper, lazy geladen, threadsicher."""
+    """faster-whisper, lazy geladen, threadsicher.
 
-    def __init__(self, model_size="small"):
+    beam_size=1 (greedy) ist ~2-3x schneller bei minimal geringerer Genauigkeit —
+    sinnvoll fuer den Live-Modus; fuer Dateien bleibt beam_size=5.
+    """
+
+    def __init__(self, model_size="small", beam_size=5):
         self.model_size = model_size
+        self.beam_size = beam_size
         self._model = None
         self._lock = threading.Lock()
 
@@ -36,6 +41,7 @@ class SpeechToText:
             from faster_whisper import WhisperModel
             self._model = WhisperModel(
                 self.model_size, device="cpu", compute_type="int8",
+                cpu_threads=os.cpu_count() or 4,  # Standard waeren nur 4 Threads
                 download_root=os.path.join(MODELS_DIR, "whisper"),
             )
         return self._model
@@ -45,7 +51,8 @@ class SpeechToText:
         model = self._ensure_model()
         with self._lock:
             segments, info = model.transcribe(
-                audio, language=language, vad_filter=True, beam_size=5,
+                audio, language=language, vad_filter=True,
+                beam_size=self.beam_size,
             )
             text = " ".join(s.text.strip() for s in segments).strip()
         return text, info.language
@@ -242,6 +249,8 @@ class VoiceCloneTTS:
     def _ensure_model(self):
         if self._tts is None:
             os.environ.setdefault("COQUI_TOS_AGREED", "1")
+            import torch
+            torch.set_num_threads(os.cpu_count() or 4)
             # torchaudio>=2.9 laedt Audio ueber torchcodec, dessen DLLs unter
             # Windows unzuverlaessig laden. Wir brauchen nur WAV-Referenzen:
             # torchaudio.load auf soundfile umleiten.

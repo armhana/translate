@@ -116,7 +116,8 @@ class App(tk.Tk):
         self.option_add("*Font", ("Segoe UI", 10))
         self._style_texts = []
         self.stt = engine.SpeechToText(model_size="small")
-        self.stt_live = engine.SpeechToText(model_size="base")  # schneller für Live
+        # Live: kleineres Modell + greedy decoding (beam=1) für minimale Latenz
+        self.stt_live = engine.SpeechToText(model_size="base", beam_size=1)
         self.translator = engine.Translator()
         self.tts = engine.TextToSpeech()
         self.clone_tts = engine.VoiceCloneTTS()
@@ -508,7 +509,18 @@ class App(tk.Tk):
         my, their = self.live_my_lang.get(), self.live_their_lang.get()
         model = "small" if "small" in self.cb_quality.get() else "base"
         if self.stt_live.model_size != model:
-            self.stt_live = engine.SpeechToText(model_size=model)
+            self.stt_live = engine.SpeechToText(model_size=model, beam_size=1)
+
+        # Modelle im Hintergrund vorwaermen, damit schon der erste Satz
+        # ohne Modell-Ladepause uebersetzt wird
+        def warmup():
+            try:
+                self.stt_live._ensure_model()
+                self.translator._ensure_pair(my, their)
+                self.translator._ensure_pair(their, my)
+            except Exception:
+                pass
+        threading.Thread(target=warmup, daemon=True).start()
         self.live_running = True
         self.btn_live.config(text="■ Stoppen")
         self._log(f"Gestartet. Ich: {my} → Partner: {their} (Modell: {model}).")

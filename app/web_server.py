@@ -34,17 +34,43 @@ clone = engine.VoiceCloneTTS()
 jobs = {}  # id -> {status, schritt, transkript, uebersetzung, fehler}
 
 
+def _warmup():
+    """Modelle beim Serverstart in den Speicher laden — der erste Auftrag
+    zahlt sonst zusaetzlich den kompletten Modell-Load (5-30 s)."""
+    try:
+        stt._ensure_model()
+        if clone.available():
+            clone._ensure_model()
+    except Exception:
+        pass  # Warmup darf nie den Serverstart verhindern
+
+
+threading.Thread(target=_warmup, daemon=True).start()
+
+
 def _verarbeite(job_id, video_path, ziel, eigene_stimme, bild_verbessern=False,
                 quell=None):
     job = jobs[job_id]
     try:
+        # Bildverbesserung (ffmpeg) parallel zur Transkription (Whisper) —
+        # beides ist CPU-lastig, aber ffmpeg und ctranslate2 teilen sich
+        # die Kerne besser, als nacheinander zu warten.
+        video_quelle_fuer_bild = video_path
+        enhance_fehler = []
+        enhance_thread = None
         if bild_verbessern:
-            job["schritt"] = "Verbessere Bild (entrauschen, schärfen, Farben)…"
             besser = os.path.join(JOBS_DIR, f"{job_id}_besser.mp4")
-            engine.enhance_video(video_path, besser)
+
+            def _enhance():
+                try:
+                    engine.enhance_video(video_path, besser)
+                except Exception as e:
+                    enhance_fehler.append(e)
+
+            enhance_thread = threading.Thread(target=_enhance, daemon=True)
+            enhance_thread.start()
             video_quelle_fuer_bild = besser
-        else:
-            video_quelle_fuer_bild = video_path
+
         job["schritt"] = "Transkribiere (Whisper)…"
         text, quelle = stt.transcribe_file(video_path, language=quell)
         job["transkript"] = text
@@ -67,6 +93,12 @@ def _verarbeite(job_id, video_path, ziel, eigene_stimme, bild_verbessern=False,
 
         audio_path = os.path.join(JOBS_DIR, f"{job_id}.wav")
         engine.save_wav(audio_path, wav, rate)
+
+        if enhance_thread is not None:
+            job["schritt"] = "Warte auf Bildverbesserung…"
+            enhance_thread.join()
+            if enhance_fehler:
+                raise enhance_fehler[0]
 
         job["schritt"] = "Baue Video mit neuer Tonspur…"
         video_out = os.path.join(JOBS_DIR, f"{job_id}.mp4")
