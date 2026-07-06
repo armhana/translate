@@ -81,6 +81,9 @@
       font-family:inherit;resize:vertical;"></textarea>
     <button id="neuVertonen" class="klein" style="margin-top:8px;">
       🔁 Mit Korrektur neu vertonen</button>
+    <div id="textHinweis" class="status fehler hidden" style="margin-top:6px;">
+      ⚠️ Text geändert — erst „Mit Korrektur neu vertonen" klicken,
+      sonst hören Sie noch die alte Fassung!</div>
     <audio id="audio" preload="auto"></audio>
     <div class="player">
       <button class="grau" onclick="spule(-10)">⏪ 10 s</button>
@@ -162,6 +165,13 @@ document.getElementById("los").onclick = async () => {
 };
 
 let aktuellerJob = null;
+let gesprochenerText = null;  // Text der zuletzt erzeugten Vertonung
+
+// Warnung zeigen, sobald der Text von der letzten Vertonung abweicht
+document.getElementById("uebersetzung").addEventListener("input", () => {
+  const geaendert = document.getElementById("uebersetzung").value.trim() !== gesprochenerText;
+  document.getElementById("textHinweis").classList.toggle("hidden", !geaendert);
+});
 
 async function warte(id){
   aktuellerJob = id;
@@ -172,6 +182,8 @@ async function warte(id){
       // Cache-Busting: nach Neu-Vertonung frische Dateien laden
       const v = Date.now();
       document.getElementById("uebersetzung").value = j.uebersetzung;
+      gesprochenerText = j.uebersetzung;
+      document.getElementById("textHinweis").classList.add("hidden");
       audio.src = `/api/audio/${id}?v=${v}`;
       document.getElementById("dlVideo").href = `/api/video/${id}?v=${v}`;
       document.getElementById("dlAudio").href = `/api/audio/${id}?v=${v}`;

@@ -218,7 +218,7 @@ class App(tk.Tk):
                   font=("Segoe UI Semibold", 10)).pack(anchor="w", pady=(4, 2))
         self.txt_orig = self._make_text(f, 8)
         self.txt_orig.pack(fill="both", expand=True, pady=(0, 8))
-        ttk.Label(f, text="Übersetzung",
+        ttk.Label(f, text="Übersetzung — dieser Text wird gesprochen, Fehler hier korrigieren",
                   font=("Segoe UI Semibold", 10)).pack(anchor="w", pady=(0, 2))
         self.txt_trans = self._make_text(f, 8)
         self.txt_trans.pack(fill="both", expand=True, pady=(0, 6))
@@ -284,7 +284,7 @@ class App(tk.Tk):
         finally:
             self.btn_video_go.config(state="normal")
 
-    def _make_audio(self):
+    def _make_audio(self, autoplay=False):
         """Vertonung erzeugen: eigene Stimme (geklont) oder neutrale Stimme."""
         text = self.txt_trans.get("1.0", "end").strip()
         if not text:
@@ -314,13 +314,24 @@ class App(tk.Tk):
                     self._set_status("Erzeuge Sprachausgabe (neutrale Stimme)…")
                     wav, rate = self.tts.synthesize(text, tgt)
                 self.current_audio = (wav, rate)
+                self.current_audio_text = text  # merken, welcher Text gesprochen wurde
                 self.player.load(wav, rate)
-                self._set_status("Vertonung fertig — mit ▶ Play anhören oder Video/WAV speichern.")
+                if autoplay:
+                    self.player.play()
+                    self._set_status("Vertonung (neu) erzeugt — Wiedergabe läuft.")
+                else:
+                    self._set_status("Vertonung fertig — mit ▶ Play anhören oder Video/WAV speichern.")
             except Exception as e:
                 self._set_status(f"Fehler bei der Vertonung: {e}")
         threading.Thread(target=worker, daemon=True).start()
 
     def _player_toggle(self):
+        text = self.txt_trans.get("1.0", "end").strip()
+        # Text wurde nach der letzten Vertonung korrigiert? Dann automatisch
+        # neu vertonen, damit nie eine veraltete Fassung abgespielt wird.
+        if text and text != getattr(self, "current_audio_text", None):
+            self._make_audio(autoplay=True)
+            return
         if self.current_audio is None:
             messagebox.showinfo(APP_TITLE, "Erst 'Vertonung erzeugen' ausführen.")
             return
@@ -339,9 +350,21 @@ class App(tk.Tk):
         self.btn_play.config(text="⏸ Pause" if self.player.playing else "▶ Play")
         self.after(250, self._tick_player)
 
-    def _save_video(self):
+    def _audio_ist_aktuell(self):
+        """Stimmt die erzeugte Vertonung noch mit dem (ggf. korrigierten) Text überein?"""
         if self.current_audio is None:
             messagebox.showinfo(APP_TITLE, "Erst 'Vertonung erzeugen' ausführen.")
+            return False
+        text = self.txt_trans.get("1.0", "end").strip()
+        if text != getattr(self, "current_audio_text", None):
+            messagebox.showinfo(APP_TITLE,
+                "Der Text wurde geändert. Bitte zuerst '② Vertonung erzeugen' klicken, "
+                "damit die Korrektur auch gesprochen wird.")
+            return False
+        return True
+
+    def _save_video(self):
+        if not self._audio_ist_aktuell():
             return
         if not self.video_path.get():
             messagebox.showinfo(APP_TITLE, "Kein Originalvideo gewählt.")
@@ -363,8 +386,7 @@ class App(tk.Tk):
         threading.Thread(target=worker, daemon=True).start()
 
     def _save_translation(self):
-        if self.current_audio is None:
-            messagebox.showinfo(APP_TITLE, "Erst 'Vertonung erzeugen' ausführen.")
+        if not self._audio_ist_aktuell():
             return
         dest = filedialog.asksaveasfilename(defaultextension=".wav",
                                             filetypes=[("WAV-Audio", "*.wav")])
