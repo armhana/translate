@@ -1,7 +1,30 @@
 # Live-Übersetzer (lokal & offline)
 
-Stand-alone-Übersetzungssoftware in Python. Alle KI-Modelle laufen lokal auf diesem
-Rechner — nach dem einmaligen Modell-Download ist keine Internetverbindung mehr nötig.
+Stand-alone-Übersetzungssoftware in Python. Alle KI-Modelle laufen lokal auf dem
+eigenen Gerät — nach dem einmaligen Modell-Download ist keine Internetverbindung
+mehr nötig.
+
+## Plattform-Übersicht
+
+**Als Server** (rechnet die KI, stellt die Web-Oberfläche bereit):
+
+| Plattform | Einrichtung | Getestet |
+|---|---|---|
+| Windows | `Installieren.bat`, dann `Start-Server.bat` | ✅ |
+| Linux (PC/Server) | `bash linux/installieren-linux.sh` (mit Autostart-Dienst) | ⚠️ ungetestet |
+| Raspberry Pi 4/5 | `bash pi/installieren-pi.sh` (mit Autostart-Dienst) | ⚠️ ungetestet |
+| Mac | `bash mac/installieren-mac.sh` (braucht Homebrew) | ⚠️ ungetestet |
+
+**Als App auf dem Endgerät** (bedient den Server im selben Netz):
+
+| Gerät | Installation als App |
+|---|---|
+| iPhone/iPad | Safari → `http://<server>:8710` → Teilen → *Zum Home-Bildschirm* |
+| Android | Chrome → Adresse öffnen → Menü → *App installieren* |
+| Windows/Linux/Mac | Chrome oder Edge → Adresse öffnen → *App installieren* (Symbol in der Adressleiste) |
+| Windows (nativ) | Desktop-App über `Start.bat` (inkl. Live-Modus) |
+| Linux/Mac (nativ) | Desktop-App: `venv/bin/python app/main.py` ⚠️ ungetestet |
+| iOS (nativ) | Swift-Starterprojekt unter `ios/` (braucht Mac + Xcode) ⚠️ ungetestet |
 
 ## Installation (neuer Rechner)
 

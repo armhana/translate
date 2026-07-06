@@ -176,6 +176,9 @@ function stopp(){ audio.pause(); audio.currentTime = 0;
 function spule(s){ audio.currentTime = Math.max(0, audio.currentTime + s); }
 audio.addEventListener("ended", () =>
   document.getElementById("playbtn").textContent = "▶ Play");
+
+// Service Worker: macht die Seite als App installierbar (Windows/Android/Linux/Mac)
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
 </script>
 </body>
 </html>
