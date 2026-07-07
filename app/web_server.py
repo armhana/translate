@@ -338,10 +338,19 @@ def lokale_ip():
 
 if __name__ == "__main__":
     import uvicorn
+    url = f"http://{lokale_ip()}:8710"
     print()
     print("=" * 60)
     print("  Live-Übersetzer läuft. Auf Handy/Browser öffnen:")
-    print(f"  http://{lokale_ip()}:8710")
-    print("  (Gerät muss im selben WLAN sein)")
+    print(f"  {url}")
+    print("  (Gerät muss im selben WLAN sein — wichtig: http, nicht https)")
     print("=" * 60)
+    try:
+        import qrcode
+        qr = qrcode.QRCode(border=1)
+        qr.add_data(url)
+        qr.print_ascii(invert=True)
+        print("  ^ Mit der iPhone-/Android-Kamera scannen — öffnet die Seite direkt.")
+    except Exception:
+        pass
     uvicorn.run(app, host="0.0.0.0", port=8710, log_level="warning")
