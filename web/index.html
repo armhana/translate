@@ -187,7 +187,7 @@ window.addEventListener("load", () => {
   try { letzter = localStorage.getItem("letzterJob"); } catch (e) {}
   if (letzter) {
     statusEl.textContent = "Setze letzten Auftrag fort…";
-    warte(letzter);
+    warte(letzter, true);
   }
 });
 
@@ -197,7 +197,7 @@ document.getElementById("uebersetzung").addEventListener("input", () => {
   document.getElementById("textHinweis").classList.toggle("hidden", !geaendert);
 });
 
-async function warte(id){
+async function warte(id, fortgesetzt){
   aktuellerJob = id;
   const start = Date.now();
   for(;;){
@@ -229,8 +229,19 @@ async function warte(id){
       return;
     }
     if (j.status === "fehler" || j.status === "unbekannt"){
-      statusEl.textContent = "Fehler: " + (j.fehler || "Auftrag unbekannt — bitte Video erneut hochladen.");
-      statusEl.className = "status fehler";
+      // Alten Auftrag verwerfen, damit die Meldung nach dem nächsten
+      // Seiten-Laden nicht wieder erscheint (bereinigt nach Neustart).
+      try { localStorage.removeItem("letzterJob"); } catch (e) {}
+      aktuellerJob = null;
+      if (fortgesetzt) {
+        // Nach Neustart: einmaliger dezenter Hinweis statt roter Dauerfehler
+        statusEl.textContent = "Hinweis: " + (j.fehler || "Der letzte Auftrag ist nicht mehr verfügbar.") +
+          " Diese Meldung erscheint nur einmal.";
+        statusEl.className = "status";
+      } else {
+        statusEl.textContent = "Fehler: " + (j.fehler || "Auftrag unbekannt — bitte Video erneut hochladen.");
+        statusEl.className = "status fehler";
+      }
       return;
     }
     await new Promise(r => setTimeout(r, 1500));
