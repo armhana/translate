@@ -248,17 +248,18 @@ class App(tk.Tk):
         self.cb_video_out = ttk.Combobox(row3, state="readonly", width=44)
         self._video_outputs = audio_mod.list_output_devices()
         self.cb_video_out["values"] = [f"{i}: {n}" for i, n in self._video_outputs]
+        # Windows-Standardgeraet per Namensvergleich vorwaehlen (der MME-Name
+        # ist gekappt, daher Praefix-Vergleich mit dem vollen WASAPI-Namen)
         try:
             import sounddevice as sd
-            def_out = sd.default.device[1]
-            for pos, (i, _) in enumerate(self._video_outputs):
-                if i == def_out:
-                    self.cb_video_out.current(pos)
-                    break
-            else:
-                if self._video_outputs:
-                    self.cb_video_out.current(0)
+            def_name = sd.query_devices(kind="output")["name"]
         except Exception:
+            def_name = ""
+        for pos, (_, n) in enumerate(self._video_outputs):
+            if n.startswith(def_name) or (def_name and def_name.startswith(n)):
+                self.cb_video_out.current(pos)
+                break
+        else:
             if self._video_outputs:
                 self.cb_video_out.current(0)
         self.cb_video_out.pack(side="left")
@@ -523,29 +524,32 @@ class App(tk.Tk):
         self.cb_out_them["values"] = ["(keine — Partner hört mich nicht übersetzt)"] + \
                                      [f"{i}: {n}" for i, n in self.outputs]
         self.cb_loop["values"] = ["(keine — Partner wird nicht übersetzt)"] + self.loops
-        # Windows-Standardgeraete vorauswaehlen statt einfach Listenanfang
+        # Windows-Standardgeraete per Namensvergleich vorauswaehlen (MME-Name
+        # ist gekappt, daher Praefix-Vergleich mit vollem WASAPI-Namen)
         import sounddevice as sd
-        try:
-            def_in, def_out = sd.default.device
-        except Exception:
-            def_in, def_out = -1, -1
-        def select_default(cb, devices, default_idx):
+        def default_name(kind):
+            try:
+                return sd.query_devices(kind=kind)["name"]
+            except Exception:
+                return ""
+        def select_default(cb, devices, name):
             if not cb["values"]:
                 return
-            for pos, (i, _) in enumerate(devices):
-                if i == default_idx:
+            for pos, (_, n) in enumerate(devices):
+                if n.startswith(name) or (name and name.startswith(n)):
                     cb.current(pos)
                     return
             cb.current(0)
-        select_default(self.cb_mic, self.inputs, def_in)
-        select_default(self.cb_out_me, self.outputs, def_out)
+        select_default(self.cb_mic, self.inputs, default_name("input"))
+        select_default(self.cb_out_me, self.outputs, default_name("output"))
         self.cb_out_them.current(0)
         # Loopback: Quelle passend zum Standard-Ausgabegeraet vorauswaehlen
         self.cb_loop.current(0)
         try:
-            out_name = dict(self.outputs).get(def_out, "")
+            out_name = default_name("output")
             for pos, name in enumerate(self.loops):
-                if name.split("(")[0].strip() and name.split("(")[0].strip() in out_name:
+                praefix = name.split("(")[0].strip()
+                if praefix and (praefix in out_name or name.startswith(out_name)):
                     self.cb_loop.current(pos + 1)  # +1 wegen "(keine)"-Eintrag
                     break
         except Exception:
