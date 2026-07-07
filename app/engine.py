@@ -299,6 +299,16 @@ def extract_voice_sample(media_path, out_wav, max_seconds=30):
     return out_wav
 
 
+def has_video_stream(media_path):
+    """True, wenn die Datei eine Videospur hat (sonst reine Audiodatei)."""
+    try:
+        import av
+        with av.open(media_path) as container:
+            return len(container.streams.video) > 0
+    except Exception:
+        return False
+
+
 def _ffmpeg_exe():
     import shutil
     exe = shutil.which("ffmpeg")

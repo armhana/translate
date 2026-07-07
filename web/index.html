@@ -46,8 +46,11 @@
   <div class="sub">lokal · im eigenen WLAN · DSGVO-konform</div>
 
   <div class="card">
-    <h2>1 · Video hochladen</h2>
-    <input type="file" id="video" accept="video/*">
+    <h2>1 · Video oder Audio hochladen</h2>
+    <input type="file" id="video">
+    <div style="font-size:.8rem;color:var(--mut);margin-top:6px;">
+      Alle gängigen Formate: MP4, MOV, MKV, WEBM, MP3, WAV, M4A …
+      Bei reinen Audiodateien gibt es Audio (ohne Video) zurück.</div>
   </div>
 
   <div class="card">
@@ -208,6 +211,8 @@ async function warte(id){
       document.getElementById("uebersetzung").value = j.uebersetzung;
       gesprochenerText = j.uebersetzung;
       document.getElementById("textHinweis").classList.add("hidden");
+      // Reine Audiodatei hochgeladen? Dann gibt es kein Video zum Laden.
+      document.getElementById("dlVideo").classList.toggle("hidden", j.hat_video === false);
       audio.src = `/api/audio/${id}?v=${v}`;
       if (startAnteil !== null) {
         // Nach Korrektur: an der Cursorstelle fortsetzen (2 s Vorlauf)

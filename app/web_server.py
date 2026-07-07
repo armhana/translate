@@ -100,13 +100,16 @@ def _verarbeite(job_id, video_path, ziel, eigene_stimme, bild_verbessern=False,
                 quell=None):
     job = jobs[job_id]
     try:
+        hat_video = engine.has_video_stream(video_path)
+        job["hat_video"] = hat_video
+
         # Bildverbesserung (ffmpeg) parallel zur Transkription (Whisper) —
         # beides ist CPU-lastig, aber ffmpeg und ctranslate2 teilen sich
         # die Kerne besser, als nacheinander zu warten.
         video_quelle_fuer_bild = video_path
         enhance_fehler = []
         enhance_thread = None
-        if bild_verbessern:
+        if bild_verbessern and hat_video:
             besser = os.path.join(JOBS_DIR, f"{job_id}_besser.mp4")
 
             def _enhance():
@@ -148,9 +151,10 @@ def _verarbeite(job_id, video_path, ziel, eigene_stimme, bild_verbessern=False,
             if enhance_fehler:
                 raise enhance_fehler[0]
 
-        job["schritt"] = "Baue Video mit neuer Tonspur…"
-        video_out = os.path.join(JOBS_DIR, f"{job_id}.mp4")
-        engine.mux_video_with_audio(video_quelle_fuer_bild, audio_path, video_out)
+        if hat_video:
+            job["schritt"] = "Baue Video mit neuer Tonspur…"
+            video_out = os.path.join(JOBS_DIR, f"{job_id}.mp4")
+            engine.mux_video_with_audio(video_quelle_fuer_bild, audio_path, video_out)
 
         job["status"] = "fertig"
         job["schritt"] = "Fertig."
@@ -200,11 +204,12 @@ def _neu_vertonen(job_id, text):
         audio_path = os.path.join(JOBS_DIR, f"{job_id}.wav")
         engine.save_wav(audio_path, wav, rate)
 
-        job["schritt"] = "Baue Video neu…"
-        besser = os.path.join(JOBS_DIR, f"{job_id}_besser.mp4")
-        quelle = besser if os.path.exists(besser) else job["_video"]
-        engine.mux_video_with_audio(quelle, audio_path,
-                                    os.path.join(JOBS_DIR, f"{job_id}.mp4"))
+        if engine.has_video_stream(job["_video"]):
+            job["schritt"] = "Baue Video neu…"
+            besser = os.path.join(JOBS_DIR, f"{job_id}_besser.mp4")
+            quelle = besser if os.path.exists(besser) else job["_video"]
+            engine.mux_video_with_audio(quelle, audio_path,
+                                        os.path.join(JOBS_DIR, f"{job_id}.mp4"))
         job["uebersetzung"] = text
         job["status"] = "fertig"
         job["schritt"] = "Fertig (mit Korrektur neu vertont)."
