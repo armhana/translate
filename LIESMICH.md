@@ -13,7 +13,7 @@ mehr nötig.
 | Windows | `Installieren.bat`, dann `Start-Server.bat` | ✅ |
 | Linux (PC/Server) | `bash linux/installieren-linux.sh` (mit Autostart-Dienst) | ⚠️ ungetestet |
 | Raspberry Pi 4/5 | `bash pi/installieren-pi.sh` (mit Autostart-Dienst) | ⚠️ ungetestet |
-| Mac | `bash mac/installieren-mac.sh` (braucht Homebrew) | ⚠️ ungetestet |
+| Mac | `git clone https://github.com/armhana/translate.git && cd translate && bash mac/installieren-mac.sh` — Details: [mac/README_MAC.md](mac/README_MAC.md) | ⚠️ ungetestet |
 
 **Als App auf dem Endgerät** (bedient den Server im selben Netz):
 
