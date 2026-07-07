@@ -106,8 +106,12 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(APP_TITLE)
-        self.geometry("1020x860")
-        self.minsize(880, 700)
+        # Fenster an den Bildschirm anpassen — sonst liegt die Statusleiste
+        # auf kleinen Displays unsichtbar unterhalb des Bildschirmrands
+        breite = min(1020, self.winfo_screenwidth() - 40)
+        hoehe = min(860, self.winfo_screenheight() - 90)
+        self.geometry(f"{breite}x{hoehe}+10+10")
+        self.minsize(760, 560)
         try:
             import sv_ttk
             sv_ttk.set_theme("light")
@@ -170,6 +174,16 @@ class App(tk.Tk):
         ttk.Label(header, text="   lokal · offline · DSGVO-konform",
                   font=("Segoe UI", 10), foreground="#6b7280").pack(side="left", pady=(6, 0))
 
+        # Statusleiste ZUERST am Boden verankern: so bekommt sie garantiert
+        # Platz und wird nie vom unteren Bildschirmrand abgeschnitten
+        bottom = ttk.Frame(self)
+        bottom.pack(side="bottom", fill="x", padx=10, pady=(0, 8))
+        self.status = tk.StringVar(value="Bereit. Beim ersten Lauf werden KI-Modelle einmalig geladen.")
+        ttk.Label(bottom, textvariable=self.status, anchor="w",
+                  font=("Segoe UI Semibold", 10),
+                  foreground="#1d4ed8").pack(side="left", fill="x", expand=True)
+        ttk.Button(bottom, text="Datenschutz", command=self._show_privacy).pack(side="right")
+
         note = ttk.Notebook(self)
         note.pack(fill="both", expand=True, padx=12, pady=8)
 
@@ -181,10 +195,6 @@ class App(tk.Tk):
         self._build_video_tab()
         self._build_live_tab()
 
-        bottom = ttk.Frame(self); bottom.pack(fill="x", padx=10, pady=(0, 6))
-        self.status = tk.StringVar(value="Bereit. Beim ersten Lauf werden KI-Modelle einmalig geladen.")
-        ttk.Label(bottom, textvariable=self.status, anchor="w").pack(side="left", fill="x", expand=True)
-        ttk.Button(bottom, text="Datenschutz", command=self._show_privacy).pack(side="right")
 
     def _lang_combo(self, parent, var):
         cb = ttk.Combobox(parent, state="readonly", width=16,
@@ -214,22 +224,27 @@ class App(tk.Tk):
                                        style="Accent.TButton", command=self._run_video)
         self.btn_video_go.pack(side="right")
 
+        # Bedienzeilen von UNTEN verankern und VOR den Textfeldern packen
+        # (frueher gepackte Widgets haben Platz-Prioritaet): bei kleinen
+        # Fenstern schrumpfen die Textfelder, nie die Knöpfe.
+        row4 = ttk.Frame(f); row4.pack(side="bottom", fill="x", pady=(0, 4))
+        row3b = ttk.Frame(f); row3b.pack(side="bottom", fill="x", pady=(0, 8))
+        row3 = ttk.Frame(f); row3.pack(side="bottom", fill="x", pady=8)
+        rowv = ttk.Frame(f); rowv.pack(side="bottom", fill="x", pady=(2, 0))
+
         ttk.Label(f, text="Transkript (Original)",
                   font=("Segoe UI Semibold", 10)).pack(anchor="w", pady=(4, 2))
-        self.txt_orig = self._make_text(f, 8)
+        self.txt_orig = self._make_text(f, 4)
         self.txt_orig.pack(fill="both", expand=True, pady=(0, 8))
         ttk.Label(f, text="Übersetzung — dieser Text wird gesprochen, Fehler hier korrigieren",
                   font=("Segoe UI Semibold", 10)).pack(anchor="w", pady=(0, 2))
-        self.txt_trans = self._make_text(f, 8)
+        self.txt_trans = self._make_text(f, 4)
         self.txt_trans.pack(fill="both", expand=True, pady=(0, 6))
 
-        rowv = ttk.Frame(f); rowv.pack(fill="x", pady=(2, 0))
         self.use_own_voice = tk.BooleanVar(value=True)
         ttk.Checkbutton(rowv, variable=self.use_own_voice,
                         text="Meine eigene Stimme verwenden (lokales Stimmprofil aus dem Video; "
                              "nur nicht-kommerzielle Nutzung)").pack(side="left")
-
-        row3 = ttk.Frame(f); row3.pack(fill="x", pady=8)
         ttk.Button(row3, text="② Vertonung erzeugen", style="Accent.TButton",
                    command=self._make_audio).pack(side="left")
         ttk.Separator(row3, orient="vertical").pack(side="left", fill="y", padx=14)
@@ -244,7 +259,6 @@ class App(tk.Tk):
         ttk.Label(row3, textvariable=self.pos_label, width=13,
                   foreground="#6b7280").pack(side="left", padx=8)
 
-        row3b = ttk.Frame(f); row3b.pack(fill="x", pady=(0, 8))
         ttk.Label(row3b, text="🔊 Wiedergabe über:").pack(side="left", padx=(0, 6))
         self.cb_video_out = ttk.Combobox(row3b, state="readonly", width=52)
         self._video_outputs = audio_mod.list_output_devices()
@@ -267,7 +281,6 @@ class App(tk.Tk):
         self.cb_video_out.bind("<<ComboboxSelected>>", self._video_out_changed)
         ttk.Button(row3b, text="🔔 Testton", command=self._testton).pack(side="left", padx=8)
 
-        row4 = ttk.Frame(f); row4.pack(fill="x", pady=(0, 4))
         ttk.Button(row4, text="③ 💾 Video mit neuer Tonspur speichern…", style="Accent.TButton",
                    command=self._save_video).pack(side="left")
         ttk.Button(row4, text="Audio speichern (MP3/WAV/M4A)…", command=self._save_translation).pack(side="left", padx=8)
