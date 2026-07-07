@@ -331,6 +331,7 @@ class App(tk.Tk):
             messagebox.showwarning(APP_TITLE, "Für die eigene Stimme wird das Video als Stimmreferenz gebraucht — bitte Videodatei wählen.")
             return
         geraet = self._aktives_ausgabegeraet()
+        wanted_own = self.use_own_voice.get()  # Haekchen-Stand zum Zeitpunkt der Erzeugung
 
         def worker():
             try:
@@ -354,16 +355,19 @@ class App(tk.Tk):
                     self._set_status("Erzeuge Sprachausgabe (neutrale Stimme)…")
                     wav, rate = self.tts.synthesize(text, tgt)
                 self.current_audio = (wav, rate)
-                self.current_audio_text = text  # merken, welcher Text gesprochen wurde
+                # merken, welcher Text MIT welcher Stimmeinstellung gesprochen wurde
+                self.current_audio_text = text
+                self.current_audio_eigene = wanted_own
                 self.player.load(wav, rate)
                 if start_fraction:
                     # An der Korrekturstelle fortsetzen (2 s Vorlauf)
                     self.player.pos = max(0, int(len(wav) * start_fraction - 2 * rate))
+                stimme = "eigene Stimme" if own else "neutrale Stimme"
                 if autoplay:
                     self.player.play()
-                    self._set_status(f"Vertonung (neu) erzeugt — Wiedergabe ab der Korrekturstelle über: {geraet}")
+                    self._set_status(f"Vertonung ({stimme}) erzeugt — Wiedergabe über: {geraet}")
                 else:
-                    self._set_status("Vertonung fertig — mit ▶ Play anhören oder Video/WAV speichern.")
+                    self._set_status(f"Vertonung fertig ({stimme}) — mit ▶ Play anhören oder speichern.")
             except Exception as e:
                 self._set_status(f"Fehler bei der Vertonung: {e}")
         threading.Thread(target=worker, daemon=True).start()
@@ -399,9 +403,11 @@ class App(tk.Tk):
 
     def _player_toggle(self):
         text = self.txt_trans.get("1.0", "end").strip()
-        # Text wurde nach der letzten Vertonung korrigiert? Dann automatisch
-        # neu vertonen, damit nie eine veraltete Fassung abgespielt wird.
-        if text and text != getattr(self, "current_audio_text", None):
+        # Text ODER Stimmeinstellung nach der letzten Vertonung geändert?
+        # Dann automatisch neu vertonen — nie eine veraltete Fassung abspielen.
+        veraltet = (text != getattr(self, "current_audio_text", None) or
+                    self.use_own_voice.get() != getattr(self, "current_audio_eigene", None))
+        if text and veraltet:
             # Cursorposition im Text -> Wiedergabe startet an der Korrekturstelle
             cursor_chars = len(self.txt_trans.get("1.0", tk.INSERT))
             fraction = min(1.0, cursor_chars / len(text)) if text else 0
@@ -441,6 +447,11 @@ class App(tk.Tk):
             messagebox.showinfo(APP_TITLE,
                 "Der Text wurde geändert. Bitte zuerst '② Vertonung erzeugen' klicken, "
                 "damit die Korrektur auch gesprochen wird.")
+            return False
+        if self.use_own_voice.get() != getattr(self, "current_audio_eigene", None):
+            messagebox.showinfo(APP_TITLE,
+                "Die Stimmeinstellung wurde geändert. Bitte zuerst '② Vertonung erzeugen' "
+                "klicken, damit die gewünschte Stimme verwendet wird.")
             return False
         return True
 
