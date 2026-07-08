@@ -2,3 +2,4 @@
 # Batch-Dateien brauchen Windows-Zeilenenden.
 *.sh  text eol=lf
 *.bat text eol=crlf
+*.command text eol=lf
