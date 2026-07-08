@@ -4,6 +4,7 @@
 // ACHTUNG: Ungetestetes Starterprojekt — siehe README_iOS.md.
 
 import AVFoundation
+import Combine
 import SwiftUI
 
 @MainActor
