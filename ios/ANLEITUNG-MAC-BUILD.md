@@ -33,9 +33,9 @@ ca. 45–60 Minuten (inkl. Downloads).
      Language: **Swift** → Next → Speicherort wählen → Create
 3. **Unseren Code hineinnehmen**:
    - Dieses Repository laden: Terminal öffnen und
-     `git clone https://github.com/armhana/translate.git`
+     `git clone https://github.com/armhana/translate-ai.git`
      (oder auf GitHub: *Code → Download ZIP*)
-   - Im Finder den Ordner `translate/ios/LiveUebersetzer/` öffnen und
+   - Im Finder den Ordner `translate-ai/ios/LiveUebersetzer/` öffnen und
      **alle fünf .swift-Dateien** in den Xcode-Projektnavigator ziehen
      (linke Spalte, auf den gelben Ordner `LiveUebersetzer`).
      Im Dialog: „Copy items if needed" ✓ → Finish.
@@ -63,10 +63,25 @@ ca. 45–60 Minuten (inkl. Downloads).
 2. In Xcode oben in der Gerätewahl (neben dem Schema-Namen) **dein iPhone**
    auswählen (nicht „Simulator").
 3. **▶-Knopf** (Run) drücken. Erster Build dauert ein paar Minuten.
-4. Beim ersten Start meldet iOS „Nicht vertrauenswürdiger Entwickler":
-   *Einstellungen → Allgemein → VPN & Geräteverwaltung → deine Apple-ID →
-   Vertrauen*. Danach App normal starten.
-5. Beim ersten App-Start Berechtigungen erlauben: Spracherkennung,
+4. **Schlüsselbund-Abfrage** („codesign möchte auf den Schlüssel ‚Apple
+   Development…' zugreifen"): Hier ist **NICHT** das Apple-ID-/iCloud-
+   Passwort gemeint, sondern das **Anmeldepasswort des Mac-Benutzerkontos**
+   — das Passwort, das man nach einem Neustart des Macs eintippt (nicht
+   Touch ID). Im Zweifel: Mac neu starten, das dort verlangte Passwort ist
+   das richtige. Dann **„Immer erlauben"** klicken (sonst fragt jeder Build
+   erneut). Geliehener Mac: Besitzer/in muss es eintippen.
+5. Beim ersten Start meldet iOS **„Nicht vertrauenswürdiger Entwickler"**.
+   Dem Zertifikat vertrauen — der Menüpunkt existiert erst, NACHDEM die
+   App installiert wurde:
+   - iPhone: *Einstellungen → **Allgemein** → fast ganz unten:
+     **VPN & Geräteverwaltung*** (je nach Version „Profile &
+     Geräteverwaltung")
+   - Abschnitt „ENTWICKLER-APP" → „Apple Development: deine@apple-id"
+     antippen → **„…vertrauen"** → bestätigen
+   - Das iPhone braucht dabei **Internet** (Apple prüft das Zertifikat)
+   - Menüpunkt fehlt? Dann ist die App nicht installiert → in Xcode
+     erneut ▶ drücken und warten, bis „Running…" erscheint
+6. Beim ersten App-Start Berechtigungen erlauben: Spracherkennung,
    Fotos-Zugriff, **Personal-Voice-Zugriff**.
 
 ## Wichtig zu wissen
@@ -89,5 +104,8 @@ ca. 45–60 Minuten (inkl. Downloads).
 | Meldung | Lösung |
 |---|---|
 | „Signing for … requires a development team" | Teil 2, Schritt 5: Apple-ID als Team hinterlegen |
-| „Could not launch … untrusted developer" | Teil 3, Schritt 4: Entwickler vertrauen |
+| „codesign möchte auf den Schlüssel … zugreifen" | Teil 3, Schritt 4: **Mac-Anmeldepasswort** (nicht iCloud!) + „Immer erlauben" |
+| „Could not launch … untrusted developer" | Teil 3, Schritt 5: unter *Allgemein → VPN & Geräteverwaltung* vertrauen (Internet nötig; Punkt erscheint erst nach Installation) |
+| „Cannot find 'X' in scope" / „does not conform to protocol" | Fehlender Import oben in der Datei — Datei aktuell aus dem Repo übernehmen und Meldung melden |
 | App startet, stürzt bei Videoauswahl ab | Teil 2, Schritt 4: die zwei Privacy-Einträge fehlen |
+| „Übersetzung fehlgeschlagen: translation request empty" | Video enthielt keine erkennbare Sprache — oder alte Codefassung: `ContentView.swift` aktuell aus dem Repo übernehmen |

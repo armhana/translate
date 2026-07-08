@@ -8,8 +8,8 @@ Browser. Alles läuft **lokal**; Inhalte verlassen das eigene Netz nicht
 ## Installation (einmalig)
 
 ```bash
-git clone https://github.com/armhana/translate.git
-cd translate
+git clone https://github.com/armhana/translate-ai.git
+cd translate-ai
 bash linux/installieren-linux.sh
 ```
 

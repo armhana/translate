@@ -11,8 +11,8 @@ Voraussetzung: [Homebrew](https://brew.sh) ist installiert.
 Dann im Terminal:
 
 ```bash
-git clone https://github.com/armhana/translate.git
-cd translate
+git clone https://github.com/armhana/translate-ai.git
+cd translate-ai
 bash mac/installieren-mac.sh
 ```
 
@@ -25,7 +25,7 @@ Inhalte hochgeladen.
 ## Starten
 
 ```bash
-cd translate/app
+cd translate-ai/app
 ../venv/bin/python web_server.py
 ```
 

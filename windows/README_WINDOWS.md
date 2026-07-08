@@ -11,7 +11,7 @@ nicht (Internet nur für den einmaligen Modell-Download).
    dabei unbedingt **„Add python.exe to PATH"** ankreuzen
 2. Dieses Repository holen — entweder:
    ```
-   git clone https://github.com/armhana/translate.git
+   git clone https://github.com/armhana/translate-ai.git
    ```
    oder auf GitHub: *Code → Download ZIP* → entpacken
    (empfohlener Ort: direkt unter `C:\Users\<name>\`, **nicht** in

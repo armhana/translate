@@ -93,8 +93,15 @@ struct ContentView: View {
         // Apple-Übersetzungs-Framework: Session wird bereitgestellt, sobald
         // uebersetzungKonfig gesetzt wird (lädt ggf. Sprachpakete on-device).
         .translationTask(uebersetzungKonfig) { session in
+            let text = transkript.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else {
+                // Leere Anfragen lehnt Apple mit "translation request empty" ab
+                status = "Keine Sprache im Video erkannt — bitte Video mit deutlicher Sprache wählen."
+                arbeitet = false
+                return
+            }
             do {
-                let antwort = try await session.translate(transkript)
+                let antwort = try await session.translate(text)
                 uebersetzung = antwort.targetText
                 status = "Übersetzung fertig — mit ▶ anhören."
             } catch {
@@ -128,6 +135,11 @@ struct ContentView: View {
         Task {
             do {
                 transkript = try await erkenner.transkribiere(videoURL: url)
+                guard !transkript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    status = "Keine Sprache im Video erkannt — bitte Video mit deutlicher Sprache wählen."
+                    arbeitet = false
+                    return
+                }
                 status = "Übersetze lokal…"
                 let quelle = Locale.Language(identifier:
                     Locale.current.language.languageCode?.identifier ?? "de")
@@ -136,6 +148,12 @@ struct ContentView: View {
                     uebersetzung = transkript
                     status = "Gleiche Sprache — Text übernommen, mit ▶ neu vertonen."
                     arbeitet = false
+                } else if uebersetzungKonfig?.source?.languageCode?.identifier
+                            == quelle.languageCode?.identifier,
+                          uebersetzungKonfig?.target?.languageCode?.identifier == zielsprache {
+                    // Gleiche Sprachrichtung wie zuvor: invalidate() erzwingt
+                    // einen neuen Übersetzungslauf (sonst reagiert iOS nicht mehr)
+                    uebersetzungKonfig?.invalidate()
                 } else {
                     uebersetzungKonfig = TranslationSession.Configuration(
                         source: quelle,
