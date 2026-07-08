@@ -7,6 +7,24 @@ import SwiftUI
 import PhotosUI
 import Translation
 
+/// Videos aus der Mediathek als DATEI übernehmen (Apples empfohlener Weg).
+/// Der frühere Weg über Data lud das ganze Video in den RAM und lieferte
+/// je nach Format stille/unbrauchbare Dateien.
+struct FilmDatei: Transferable {
+    let url: URL
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(contentType: .movie) { film in
+            SentTransferredFile(film.url)
+        } importing: { empfangen in
+            let ziel = FileManager.default.temporaryDirectory
+                .appendingPathComponent("eingabe_\(UUID().uuidString).\(empfangen.file.pathExtension)")
+            try? FileManager.default.removeItem(at: ziel)
+            try FileManager.default.copyItem(at: empfangen.file, to: ziel)
+            return FilmDatei(url: ziel)
+        }
+    }
+}
+
 struct ContentView: View {
     @State private var videoItem: PhotosPickerItem?
     @State private var videoURL: URL?
@@ -123,15 +141,15 @@ struct ContentView: View {
         guard let item = videoItem else { return }
         status = "Lade Video…"
         Task {
-            // Video als Datei in den App-Container kopieren
-            if let daten = try? await item.loadTransferable(type: Data.self) {
-                let ziel = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("eingabe.mov")
-                try? daten.write(to: ziel)
-                videoURL = ziel
-                status = "Video bereit."
-            } else {
-                status = "Video konnte nicht geladen werden."
+            do {
+                if let film = try await item.loadTransferable(type: FilmDatei.self) {
+                    videoURL = film.url
+                    status = "Video bereit."
+                } else {
+                    status = "Video konnte nicht geladen werden."
+                }
+            } catch {
+                status = "Video-Import fehlgeschlagen: \(error.localizedDescription)"
             }
         }
     }

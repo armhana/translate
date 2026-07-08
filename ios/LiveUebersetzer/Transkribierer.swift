@@ -10,7 +10,7 @@ struct Transkribierer {
 
     enum Fehler: LocalizedError {
         case keineBerechtigung, keinErkenner, exportFehlgeschlagen
-        case keinOnDeviceModell, nichtsErkannt
+        case keinOnDeviceModell, nichtsErkannt, keineTonspur
         var errorDescription: String? {
             switch self {
             case .keineBerechtigung: return "Spracherkennung nicht erlaubt (Einstellungen prüfen)."
@@ -22,7 +22,9 @@ struct Transkribierer {
                 "dann mit WLAN einige Minuten warten, bis das Modell geladen ist."
             case .nichtsErkannt: return
                 "Keine Sprache im Video erkannt — bitte Video mit deutlicher " +
-                "Sprache in der Gerätesprache wählen."
+                "Sprache in der gewählten Videosprache verwenden."
+            case .keineTonspur: return
+                "Das Video hat keine Tonspur — beim Import ist der Ton verloren gegangen."
             }
         }
     }
@@ -39,6 +41,9 @@ struct Transkribierer {
             .appendingPathComponent("tonspur.m4a")
         try? FileManager.default.removeItem(at: audioURL)
         let asset = AVURLAsset(url: videoURL)
+        // Ohne Tonspur "gelingt" der Export still mit Stille — vorher pruefen
+        let tonspuren = try await asset.loadTracks(withMediaType: .audio)
+        guard !tonspuren.isEmpty else { throw Fehler.keineTonspur }
         guard let export = AVAssetExportSession(asset: asset,
                                                 presetName: AVAssetExportPresetAppleM4A) else {
             throw Fehler.exportFehlgeschlagen
@@ -60,14 +65,24 @@ struct Transkribierer {
         }
         let anfrage = SFSpeechURLRecognitionRequest(url: audioURL)
         anfrage.requiresOnDeviceRecognition = true   // nichts verlässt das Gerät
-        anfrage.shouldReportPartialResults = false
+        anfrage.shouldReportPartialResults = true    // Zwischenstand als Auffangnetz
         anfrage.addsPunctuation = true
 
         let text: String = try await withCheckedThrowingContinuation { cont in
+            var bester = ""   // bestes Zwischenergebnis merken
             erkenner.recognitionTask(with: anfrage) { ergebnis, fehler in
-                if let fehler { cont.resume(throwing: fehler); return }
-                if let ergebnis, ergebnis.isFinal {
-                    cont.resume(returning: ergebnis.bestTranscription.formattedString)
+                if let ergebnis {
+                    let t = ergebnis.bestTranscription.formattedString
+                    if t.count > bester.count { bester = t }
+                    if ergebnis.isFinal {
+                        cont.resume(returning: t.isEmpty ? bester : t)
+                        return
+                    }
+                }
+                if let fehler {
+                    // Wenn schon Text erkannt wurde, ist er wertvoller als der Fehler
+                    if bester.isEmpty { cont.resume(throwing: fehler) }
+                    else { cont.resume(returning: bester) }
                 }
             }
         }
