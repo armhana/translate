@@ -69,17 +69,21 @@ struct Transkribierer {
         anfrage.addsPunctuation = true
 
         let text: String = try await withCheckedThrowingContinuation { cont in
-            var bester = ""   // bestes Zwischenergebnis merken
+            var bester = ""     // bestes Zwischenergebnis merken
+            var fertig = false  // Continuation darf nur EINMAL beantwortet werden
             erkenner.recognitionTask(with: anfrage) { ergebnis, fehler in
+                guard !fertig else { return }
                 if let ergebnis {
                     let t = ergebnis.bestTranscription.formattedString
                     if t.count > bester.count { bester = t }
                     if ergebnis.isFinal {
+                        fertig = true
                         cont.resume(returning: t.isEmpty ? bester : t)
                         return
                     }
                 }
                 if let fehler {
+                    fertig = true
                     // Wenn schon Text erkannt wurde, ist er wertvoller als der Fehler
                     if bester.isEmpty { cont.resume(throwing: fehler) }
                     else { cont.resume(returning: bester) }
