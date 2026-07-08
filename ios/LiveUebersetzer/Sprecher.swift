@@ -35,7 +35,7 @@ final class Sprecher: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
                 ? "✅ Deine Personal Voice ist bereit."
                 : "⚠️ Zugriff erlaubt, aber keine Personal Voice gefunden — in Einstellungen → Bedienungshilfen → Personal Voice erstellen (Training + eine Nacht warten)."
         case .denied:
-            return "❌ Zugriff verweigert — Einstellungen → Bedienungshilfen → Personal Voice → „Apps dürfen Zugriff anfordern" aktivieren."
+            return "❌ Zugriff verweigert — Einstellungen → Bedienungshilfen → Personal Voice → \"Apps dürfen Zugriff anfordern\" aktivieren."
         case .unsupported:
             return "❌ Dieses iPhone unterstützt Personal Voice nicht (braucht iOS 17+)."
         default:
@@ -144,7 +144,7 @@ final class Sprecher: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
             }
             return beste
         }
-        stimmenInfo = "Keine Stimme für „\(sprache)" installiert"
+        stimmenInfo = "Keine Stimme für \"\(sprache)\" installiert"
         return AVSpeechSynthesisVoice(language: sprache)
     }
 
