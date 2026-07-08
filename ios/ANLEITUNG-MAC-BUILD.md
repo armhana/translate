@@ -109,3 +109,4 @@ ca. 45–60 Minuten (inkl. Downloads).
 | „Cannot find 'X' in scope" / „does not conform to protocol" | Fehlender Import oben in der Datei — Datei aktuell aus dem Repo übernehmen und Meldung melden |
 | App startet, stürzt bei Videoauswahl ab | Teil 2, Schritt 4: die zwei Privacy-Einträge fehlen |
 | „Übersetzung fehlgeschlagen: translation request empty" | Video enthielt keine erkennbare Sprache — oder alte Codefassung: `ContentView.swift` aktuell aus dem Repo übernehmen |
+| Play drückt sich, aber kein Ton | 1. **Stummschalter** des iPhones war die Ursache älterer Codefassungen — `Sprecher.swift` aktualisieren, dann spielt es trotz Lautlos · 2. Lautstärke hoch · 3. verbundenen Bluetooth-Kopfhörer prüfen |
