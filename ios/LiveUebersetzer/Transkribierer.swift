@@ -27,7 +27,7 @@ struct Transkribierer {
         }
     }
 
-    func transkribiere(videoURL: URL) async throws -> String {
+    func transkribiere(videoURL: URL, sprache: Locale) async throws -> String {
         // 1) Berechtigung
         let statusOK = await withCheckedContinuation { cont in
             SFSpeechRecognizer.requestAuthorization { cont.resume(returning: $0 == .authorized) }
@@ -48,8 +48,10 @@ struct Transkribierer {
         await export.export()
         guard export.status == .completed else { throw Fehler.exportFehlgeschlagen }
 
-        // 3) On-Device-Erkennung in der Gerätesprache
-        guard let erkenner = SFSpeechRecognizer(locale: Locale.current),
+        // 3) On-Device-Erkennung in der GEWÄHLTEN Videosprache (nicht
+        // zwingend die Gerätesprache — sonst findet ein z.B. englisch
+        // eingestelltes iPhone in deutschen Videos nichts)
+        guard let erkenner = SFSpeechRecognizer(locale: sprache),
               erkenner.isAvailable else { throw Fehler.keinErkenner }
         // Ohne lokales Diktatmodell liefert die Erkennung still NICHTS —
         // besser klar melden, was zu tun ist.

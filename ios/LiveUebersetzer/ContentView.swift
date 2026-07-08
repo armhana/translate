@@ -15,7 +15,9 @@ struct ContentView: View {
     @State private var status = "Bereit."
     @State private var arbeitet = false
 
-    // Zielsprache automatisch aus der Gerätesprache
+    // Sprache im Video (Quelle) und Zielsprache — beide wählbar;
+    // Vorbelegung aus der Gerätesprache
+    @State private var quellsprache = Locale.current.language.languageCode?.identifier ?? "de"
     @State private var zielsprache = Locale.current.language.languageCode?.identifier ?? "de"
     @State private var eigeneStimme = true
     @State private var uebersetzungKonfig: TranslationSession.Configuration?
@@ -38,6 +40,12 @@ struct ContentView: View {
                 }
 
                 Section("2 · Sprache & Transkript") {
+                    Picker("Sprache im Video", selection: $quellsprache) {
+                        ForEach(sprachen, id: \.self) { code in
+                            Text(Locale.current.localizedString(forLanguageCode: code) ?? code)
+                                .tag(code)
+                        }
+                    }
                     Picker("Zielsprache", selection: $zielsprache) {
                         ForEach(sprachen, id: \.self) { code in
                             Text(Locale.current.localizedString(forLanguageCode: code) ?? code)
@@ -134,16 +142,16 @@ struct ContentView: View {
         status = "Transkribiere lokal…"
         Task {
             do {
-                transkript = try await erkenner.transkribiere(videoURL: url)
+                transkript = try await erkenner.transkribiere(
+                    videoURL: url, sprache: Locale(identifier: quellsprache))
                 guard !transkript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                     status = "Keine Sprache im Video erkannt — bitte Video mit deutlicher Sprache wählen."
                     arbeitet = false
                     return
                 }
                 status = "Übersetze lokal…"
-                let quelle = Locale.Language(identifier:
-                    Locale.current.language.languageCode?.identifier ?? "de")
-                if quelle.languageCode?.identifier == zielsprache {
+                let quelle = Locale.Language(identifier: quellsprache)
+                if quellsprache == zielsprache {
                     // Gleiche Sprache (Akzent entfernen): direkt übernehmen
                     uebersetzung = transkript
                     status = "Gleiche Sprache — Text übernommen, mit ▶ neu vertonen."
