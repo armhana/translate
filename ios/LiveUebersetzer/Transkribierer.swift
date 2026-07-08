@@ -10,11 +10,19 @@ struct Transkribierer {
 
     enum Fehler: LocalizedError {
         case keineBerechtigung, keinErkenner, exportFehlgeschlagen
+        case keinOnDeviceModell, nichtsErkannt
         var errorDescription: String? {
             switch self {
             case .keineBerechtigung: return "Spracherkennung nicht erlaubt (Einstellungen prüfen)."
             case .keinErkenner: return "Kein Erkenner für die Gerätesprache verfügbar."
             case .exportFehlgeschlagen: return "Tonspur konnte nicht extrahiert werden."
+            case .keinOnDeviceModell: return
+                "Lokales Diktatmodell fehlt. Bitte aktivieren: Einstellungen → " +
+                "Allgemein → Tastatur → Diktat einschalten (Sprache Deutsch), " +
+                "dann mit WLAN einige Minuten warten, bis das Modell geladen ist."
+            case .nichtsErkannt: return
+                "Keine Sprache im Video erkannt — bitte Video mit deutlicher " +
+                "Sprache in der Gerätesprache wählen."
             }
         }
     }
@@ -43,11 +51,17 @@ struct Transkribierer {
         // 3) On-Device-Erkennung in der Gerätesprache
         guard let erkenner = SFSpeechRecognizer(locale: Locale.current),
               erkenner.isAvailable else { throw Fehler.keinErkenner }
+        // Ohne lokales Diktatmodell liefert die Erkennung still NICHTS —
+        // besser klar melden, was zu tun ist.
+        guard erkenner.supportsOnDeviceRecognition else {
+            throw Fehler.keinOnDeviceModell
+        }
         let anfrage = SFSpeechURLRecognitionRequest(url: audioURL)
         anfrage.requiresOnDeviceRecognition = true   // nichts verlässt das Gerät
         anfrage.shouldReportPartialResults = false
+        anfrage.addsPunctuation = true
 
-        return try await withCheckedThrowingContinuation { cont in
+        let text: String = try await withCheckedThrowingContinuation { cont in
             erkenner.recognitionTask(with: anfrage) { ergebnis, fehler in
                 if let fehler { cont.resume(throwing: fehler); return }
                 if let ergebnis, ergebnis.isFinal {
@@ -55,5 +69,9 @@ struct Transkribierer {
                 }
             }
         }
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw Fehler.nichtsErkannt
+        }
+        return text
     }
 }
