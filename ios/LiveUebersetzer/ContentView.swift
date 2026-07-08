@@ -90,6 +90,11 @@ struct ContentView: View {
 
                 Section("4 · Ausgabe") {
                     Toggle("Meine eigene Stimme (Personal Voice)", isOn: $eigeneStimme)
+                    if eigeneStimme {
+                        Text(Sprecher.personalVoiceStatus())
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                     HStack(spacing: 18) {
                         Button { sprecher.spuleZurueck() } label: {
                             Image(systemName: "gobackward.10")

@@ -25,6 +25,24 @@ final class Sprecher: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         AVSpeechSynthesizer.requestPersonalVoiceAuthorization { _ in }
     }
 
+    /// Ist die eigene Stimme (Personal Voice) nutzbar? Klartext für die UI.
+    static func personalVoiceStatus() -> String {
+        switch AVSpeechSynthesizer.personalVoiceAuthorizationStatus {
+        case .authorized:
+            let vorhanden = AVSpeechSynthesisVoice.speechVoices()
+                .contains { $0.voiceTraits.contains(.isPersonalVoice) }
+            return vorhanden
+                ? "✅ Deine Personal Voice ist bereit."
+                : "⚠️ Zugriff erlaubt, aber keine Personal Voice gefunden — in Einstellungen → Bedienungshilfen → Personal Voice erstellen (Training + eine Nacht warten)."
+        case .denied:
+            return "❌ Zugriff verweigert — Einstellungen → Bedienungshilfen → Personal Voice → „Apps dürfen Zugriff anfordern" aktivieren."
+        case .unsupported:
+            return "❌ Dieses iPhone unterstützt Personal Voice nicht (braucht iOS 17+)."
+        default:
+            return "⚠️ Zugriff noch nicht angefragt — einmal ▶ Play drücken und die Abfrage erlauben."
+        }
+    }
+
     /// Ohne .playback-Kategorie bleibt die Sprachausgabe bei aktiviertem
     /// Stummschalter des iPhones KOMPLETT stumm — haeufigster Grund fuer
     /// "Play tut nichts".
