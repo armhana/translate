@@ -1,4 +1,4 @@
-// LiveUebersetzerApp.swift
+// EchoMeApp.swift
 // Einstiegspunkt mit DSGVO-Einwilligungs-Gate: ohne aktive Zustimmung
 // ist die App nicht bedienbar (Art. 6 Abs. 1 lit. a DSGVO).
 // ACHTUNG: Ungetestetes Starterprojekt — siehe README_iOS.md.
@@ -6,7 +6,7 @@
 import SwiftUI
 
 @main
-struct LiveUebersetzerApp: App {
+struct EchoMeApp: App {
     @AppStorage("einwilligungErteilt") private var einwilligungErteilt = false
 
     var body: some Scene {

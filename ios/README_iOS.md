@@ -25,9 +25,9 @@ Personal Voice*; Apps erhalten nur mit expliziter Zustimmung Zugriff.
 
 ## Projekt aufsetzen
 
-1. Xcode → *File → New → Project → iOS App*, Name `LiveUebersetzer`,
+1. Xcode → *File → New → Project → iOS App*, Name `EchoMe`,
    Interface **SwiftUI**, Sprache **Swift**.
-2. Die Dateien aus `ios/LiveUebersetzer/` in das Projekt ziehen
+2. Die Dateien aus `ios/EchoMe/` in das Projekt ziehen
    (die von Xcode erzeugten `ContentView.swift`/`…App.swift` ersetzen).
 3. In den Target-Einstellungen → *Info* diese Schlüssel ergänzen:
    - `NSSpeechRecognitionUsageDescription` — „Transkribiert Ihre Videos lokal."

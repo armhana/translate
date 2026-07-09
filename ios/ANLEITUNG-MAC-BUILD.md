@@ -1,5 +1,12 @@
 # Schritt für Schritt: Die iOS-App auf dein iPhone bringen
 
+> **Hinweis bei bestehendem Projekt:** Der Code-Ordner heißt seit der
+> Umbenennung `ios/EchoMe/` (früher `ios/LiveUebersetzer/`), die Startdatei
+> `EchoMeApp.swift`. Ein bereits eingerichtetes Xcode-Projekt musst du
+> **nicht** neu anlegen — Projekt- und Dateinamen dort dürfen alt bleiben;
+> einfach nur die Datei-**Inhalte** aus dem Repo übernehmen (Swift ist der
+> Dateiname egal). Nur bei einem frischen Projekt gilt: Product Name `EchoMe`.
+
 Diese Anleitung setzt **keine Xcode-Erfahrung** voraus. Dauer beim ersten Mal:
 ca. 45–60 Minuten (inkl. Downloads).
 
@@ -29,22 +36,22 @@ ca. 45–60 Minuten (inkl. Downloads).
    Beim ersten Start Lizenz bestätigen und Komponenten installieren lassen.
 2. **Projekt anlegen**:
    - Xcode → *Create New Project* → **iOS → App** → Next
-   - Product Name: `LiveUebersetzer` · Interface: **SwiftUI** ·
+   - Product Name: `EchoMe` · Interface: **SwiftUI** ·
      Language: **Swift** → Next → Speicherort wählen → Create
 3. **Unseren Code hineinnehmen**:
    - Dieses Repository laden: Terminal öffnen und
      `git clone https://github.com/armhana/echome-ai.git`
      (oder auf GitHub: *Code → Download ZIP*)
-   - Im Finder den Ordner `echome-ai/ios/LiveUebersetzer/` öffnen und
+   - Im Finder den Ordner `echome-ai/ios/EchoMe/` öffnen und
      **alle fünf .swift-Dateien** in den Xcode-Projektnavigator ziehen
-     (linke Spalte, auf den gelben Ordner `LiveUebersetzer`).
+     (linke Spalte, auf den gelben Ordner `EchoMe`).
      Im Dialog: „Copy items if needed" ✓ → Finish.
    - Die von Xcode selbst erzeugten `ContentView.swift` und
-     `LiveUebersetzerApp.swift` **löschen** (Rechtsklick → Delete →
+     `EchoMeApp.swift` **löschen** (Rechtsklick → Delete →
      Move to Trash), unsere ersetzen sie.
 4. **Berechtigungs-Texte eintragen** (Pflicht, sonst stürzt die App ab):
-   - Projektnavigator: oberster blauer Eintrag `LiveUebersetzer` →
-     Target `LiveUebersetzer` → Reiter **Info** → unter „Custom iOS Target
+   - Projektnavigator: oberster blauer Eintrag `EchoMe` →
+     Target `EchoMe` → Reiter **Info** → unter „Custom iOS Target
      Properties" per ➕ zwei Einträge anlegen:
      | Key | Wert |
      |---|---|
