@@ -27,7 +27,7 @@ Inhalte hochgeladen.
 **1. Desktop-App** (das Gegenstück zu `Start.bat` unter Windows —
 der Mac braucht dafür keinen Server und kein anderes Gerät):
 
-> Doppelklick auf **`mac/Uebersetzer-App.command`**
+> Doppelklick auf **`mac/EchoMe-App.command`**
 > (oder Terminal: `venv/bin/python app/main.py`)
 
 Beim allerersten Doppelklick verlangt macOS: **Rechtsklick → Öffnen**
@@ -36,7 +36,7 @@ Beim allerersten Doppelklick verlangt macOS: **Rechtsklick → Öffnen**
 **2. Web-Server** — nur nötig, wenn **andere** Geräte (iPhone, Android)
 diesen Mac als Übersetzer nutzen sollen:
 
-> Doppelklick auf **`mac/Uebersetzer-Server.command`**
+> Doppelklick auf **`mac/EchoMe-Server.command`**
 
 Im Terminal erscheinen Adresse und QR-Code — am iPhone scannen oder
 `http://<Mac-IP>:8710` in Safari öffnen (wichtig: **http**, nicht https).

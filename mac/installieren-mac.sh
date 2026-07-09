@@ -29,18 +29,18 @@ print("Whisper small bereit.")
 EOF
 
 echo "[4/4] Doppelklick-Starter aktivieren..."
-chmod +x mac/Uebersetzer-App.command mac/Uebersetzer-Server.command
+chmod +x mac/EchoMe-App.command mac/EchoMe-Server.command
 
 echo ""
 echo "=============================================================="
 echo "  Fertig! Zwei unabhaengige Startwege:"
 echo ""
 echo "  DESKTOP-APP (wie Start.bat unter Windows):"
-echo "      Doppelklick auf  mac/Uebersetzer-App.command"
+echo "      Doppelklick auf  mac/EchoMe-App.command"
 echo "      (oder Terminal:  venv/bin/python app/main.py)"
 echo ""
 echo "  WEB-SERVER (nur falls iPhone & Co. diesen Mac nutzen sollen):"
-echo "      Doppelklick auf  mac/Uebersetzer-Server.command"
+echo "      Doppelklick auf  mac/EchoMe-Server.command"
 echo "      dann am Handy:   http://<Mac-IP>:8710"
 echo ""
 echo "  Beim ersten Doppelklick: Rechtsklick -> Oeffnen (Gatekeeper)."
