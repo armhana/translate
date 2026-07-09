@@ -47,3 +47,19 @@ AI-based pronunciation improvement
 Contributing
 
 Ideas, feedback, and contributions are welcome. Together we can build tools that make global communication feel more human.
+
+
+---
+
+## Documentation / Dokumentation
+
+Technische Übersicht (deutsch): [LIESMICH.md](LIESMICH.md)
+
+| Installation | Anleitung |
+|---|---|
+| Windows | [windows/README_WINDOWS.md](windows/README_WINDOWS.md) |
+| macOS | [mac/README_MAC.md](mac/README_MAC.md) |
+| Linux | [linux/README_LINUX.md](linux/README_LINUX.md) |
+| Raspberry Pi | [pi/README_PI.md](pi/README_PI.md) |
+| iPhone/Android als App | [APP-INSTALLATION.md](APP-INSTALLATION.md) |
+| iOS nativ (Xcode) | [ios/ANLEITUNG-MAC-BUILD.md](ios/ANLEITUNG-MAC-BUILD.md) |
