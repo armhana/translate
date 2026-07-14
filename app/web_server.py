@@ -32,6 +32,7 @@ stt = engine.SpeechToText(model_size=os.environ.get("WHISPER_MODELL", "small"))
 translator = engine.Translator()
 tts = engine.TextToSpeech()
 clone = engine.VoiceCloneTTS()
+lektor = engine.RephraseLLM()
 
 jobs = {}  # id -> {status, schritt, transkript, uebersetzung, fehler}
 
@@ -225,6 +226,44 @@ def _verarbeite_text(job_id, text, quell, ziel):
         job["status"] = "fehler"
         job["fehler"] = str(e)
     _speichere_job(job_id)
+
+
+def _verarbeite_eloquent(job_id, text, sprache):
+    job = jobs[job_id]
+    fortschritt = _fortschritt_helfer(job)
+    try:
+        job["hat_video"] = False
+        job["schritt"] = "KI formuliert um (lokales Sprachmodell)…"
+
+        def bei_stueck(i, n):
+            job["schritt"] = f"KI formuliert um — Abschnitt {i} von {n}…"
+            fortschritt(5 + (i / n) * 90)
+
+        job["uebersetzung"] = lektor.eloquent(text, sprache, on_progress=bei_stueck)
+        job["status"] = "fertig"
+        job["schritt"] = "Fertig (eloquent umformuliert)."
+        job["fortschritt"] = 100
+        job["rest_sekunden"] = 0
+    except Exception as e:
+        job["status"] = "fehler"
+        job["fehler"] = str(e)
+    _speichere_job(job_id)
+
+
+@app.post("/api/eloquent")
+async def eloquent(text: str = Form(...), sprache: str = Form("de")):
+    if not lektor.available():
+        return JSONResponse({"fehler": "KI-Umformulierung nicht installiert "
+                             "(Sprachmodell fehlt unter models/llm/)."}, status_code=503)
+    if not text.strip():
+        return JSONResponse({"fehler": "Text ist leer"}, status_code=400)
+    job_id = uuid.uuid4().hex[:12]
+    jobs[job_id] = {"status": "laeuft", "schritt": "In Warteschlange…",
+                    "transkript": "", "uebersetzung": "", "fehler": "",
+                    "_video": "", "_ziel": sprache, "_eigene_stimme": False}
+    threading.Thread(target=_verarbeite_eloquent,
+                     args=(job_id, text.strip(), sprache), daemon=True).start()
+    return {"job_id": job_id}
 
 
 @app.post("/api/optimize")

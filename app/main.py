@@ -225,6 +225,8 @@ class App(tk.Tk):
         self.btn_video_go.pack(side="right")
         ttk.Button(row2, text="✨ Satz optimieren",
                    command=self._optimize_texts).pack(side="right", padx=6)
+        ttk.Button(row2, text="🪄 Eloquent (KI)",
+                   command=self._eloquent).pack(side="right")
 
         # Bedienzeilen von UNTEN verankern und VOR den Textfeldern packen
         # (frueher gepackte Widgets haben Platz-Prioritaet): bei kleinen
@@ -311,6 +313,32 @@ class App(tk.Tk):
             self.txt_trans.insert("1.0", engine.optimize_text(trans, self.video_tgt.get()))
         self._set_status("Sätze optimiert (Füllwörter/Dopplungen entfernt). "
                          "Für Sprachausgabe '② Vertonung erzeugen'.")
+
+    def _eloquent(self):
+        """Echte KI-Umformulierung der Übersetzung mit lokalem Sprachmodell."""
+        text = self.txt_trans.get("1.0", "end").strip()
+        if not text:
+            messagebox.showinfo(APP_TITLE, "Erst übersetzen — die KI formuliert das Übersetzungsfeld um.")
+            return
+        lektor = getattr(self, "_lektor", None)
+        if lektor is None:
+            self._lektor = lektor = engine.RephraseLLM()
+        if not lektor.available():
+            messagebox.showwarning(APP_TITLE, "Sprachmodell fehlt (models/llm/…gguf) — "
+                                   "bitte Installieren.bat erneut ausführen.")
+            return
+
+        def worker():
+            try:
+                self._set_status("KI formuliert um — erster Lauf lädt das Sprachmodell (~1 Min.)…")
+                def prog(i, n):
+                    self._set_status(f"KI formuliert um — Abschnitt {i} von {n}…")
+                neu = lektor.eloquent(text, self.video_tgt.get(), on_progress=prog)
+                self._set_text(self.txt_trans, neu)
+                self._set_status("Eloquent umformuliert — prüfen, dann '② Vertonung erzeugen'.")
+            except Exception as e:
+                self._set_status(f"Fehler bei der KI-Umformulierung: {e}")
+        threading.Thread(target=worker, daemon=True).start()
 
     def _run_video(self):
         path = self.video_path.get()

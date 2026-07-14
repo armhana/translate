@@ -91,6 +91,7 @@
       border:1px solid var(--line);border-radius:10px;font-size:.92rem;
       font-family:inherit;resize:vertical;"></textarea>
     <button id="optimBtn" class="klein grau" style="margin-top:8px;">✨ Satz optimieren</button>
+    <button id="eloqBtn" class="klein grau" style="margin-top:8px;">🪄 Eloquent (KI, dauert)</button>
     <button id="neuVertonen" class="klein" style="margin-top:8px;">
       🔁 Mit Korrektur neu vertonen</button>
     <div id="textHinweis" class="status fehler hidden" style="margin-top:6px;">
@@ -345,6 +346,40 @@ document.getElementById("optimBtn").onclick = async () => {
   const r = await fetch("/api/optimize", { method:"POST", body:fd });
   ta.value = (await r.json()).text;
   document.getElementById("textHinweis").classList.remove("hidden");
+};
+
+document.getElementById("eloqBtn").onclick = async () => {
+  const ta = document.getElementById("uebersetzung");
+  if (!ta.value.trim()) return;
+  const knopf = document.getElementById("eloqBtn");
+  knopf.disabled = true;
+  statusEl.className = "status";
+  statusEl.textContent = "KI formuliert um…";
+  try {
+    const fd = new FormData();
+    fd.append("text", ta.value);
+    fd.append("sprache", sel.value);
+    const r = await fetch("/api/eloquent", { method:"POST", body:fd });
+    if (!r.ok) throw new Error((await r.json()).fehler || r.status);
+    const { job_id } = await r.json();
+    for(;;){
+      await new Promise(x => setTimeout(x, 1500));
+      const j = await (await fetch(`/api/status/${job_id}`)).json();
+      if (j.status === "fertig"){
+        ta.value = j.uebersetzung;
+        document.getElementById("textHinweis").classList.remove("hidden");
+        statusEl.textContent = "Eloquent umformuliert — bitte prüfen, dann neu vertonen.";
+        break;
+      }
+      if (j.status === "fehler"){ throw new Error(j.fehler); }
+      statusEl.textContent = (j.schritt || "…") + (j.fortschritt ? ` — ${j.fortschritt} %` : "");
+    }
+  } catch (e) {
+    statusEl.textContent = "Fehler: " + e.message;
+    statusEl.className = "status fehler";
+  } finally {
+    knopf.disabled = false;
+  }
 };
 </script>
 </body>

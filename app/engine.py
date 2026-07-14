@@ -446,6 +446,81 @@ def mux_video_with_audio(video_path, audio_wav, out_path):
     return out_path
 
 
+
+class RephraseLLM:
+    """Echte KI-Umformulierung ('eloquent') mit einem lokalen Sprachmodell
+    (llama.cpp + Qwen2.5-3B-Instruct). Laeuft vollstaendig offline auf der CPU;
+    das Modell (~2 GB) wird beim ersten Gebrauch in den Speicher geladen."""
+
+    MODELL_PFAD = os.path.join(MODELS_DIR, "llm", "Qwen2.5-3B-Instruct-Q4_K_M.gguf")
+
+    def __init__(self):
+        self._llm = None
+        self._lock = threading.RLock()
+
+    def available(self):
+        try:
+            import llama_cpp  # noqa: F401
+        except ImportError:
+            return False
+        return os.path.exists(self.MODELL_PFAD)
+
+    def _ensure_model(self):
+        if self._llm is None:
+            from llama_cpp import Llama
+            self._llm = Llama(model_path=self.MODELL_PFAD, n_ctx=4096,
+                              n_threads=min(8, os.cpu_count() or 4),
+                              verbose=False)
+        return self._llm
+
+    SPRACHNAMEN = {"de": "Deutsch", "en": "Englisch", "fr": "Franzoesisch",
+                   "es": "Spanisch", "it": "Italienisch", "pt": "Portugiesisch",
+                   "nl": "Niederlaendisch", "pl": "Polnisch", "ru": "Russisch",
+                   "tr": "Tuerkisch", "zh": "Chinesisch"}
+
+    def eloquent(self, text, sprache="de", on_progress=None):
+        """Formuliert den Text fluessig und eloquent um (gleiche Sprache,
+        gleicher Inhalt). Lange Texte werden absatz-/satzweise verarbeitet."""
+        import re
+
+        def _im_thread():
+            llm = self._ensure_model()
+            sprachname = self.SPRACHNAMEN.get(sprache, sprache)
+            # In Stuecke von ~1200 Zeichen an Satzgrenzen teilen
+            saetze = re.split(r"(?<=[.!?])\s+", text.strip())
+            stuecke, aktuell = [], ""
+            for s in saetze:
+                if len(aktuell) + len(s) > 1200 and aktuell:
+                    stuecke.append(aktuell.strip())
+                    aktuell = s
+                else:
+                    aktuell += " " + s
+            if aktuell.strip():
+                stuecke.append(aktuell.strip())
+
+            ergebnis = []
+            for i, stueck in enumerate(stuecke):
+                antwort = llm.create_chat_completion(
+                    messages=[
+                        {"role": "system", "content":
+                         f"Du bist ein professioneller Lektor. Formuliere den Text des Nutzers "
+                         f"eloquent, fluessig und stilistisch sauber um — auf {sprachname}. "
+                         f"Behalte Inhalt, Bedeutung und Aussageform exakt bei (aus Aussagen "
+                         f"keine Fragen machen), erfinde nichts hinzu, lasse nichts weg. "
+                         f"Antworte NUR mit dem umformulierten Text."},
+                        {"role": "user", "content": stueck},
+                    ],
+                    temperature=0.3, max_tokens=1024,
+                )
+                ergebnis.append(antwort["choices"][0]["message"]["content"].strip())
+                if on_progress:
+                    on_progress(i + 1, len(stuecke))
+            return " ".join(ergebnis)
+
+        with self._lock:
+            return _im_ki_thread(_im_thread)
+
+
 def optimize_text(text, sprache="de"):
     """Regelbasierte Satzoptimierung (offline, keine KI-Umformulierung):
     Fuellwoerter raus, doppelte Woerter/Leerzeichen weg, Gross-/Klein-

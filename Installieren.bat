@@ -20,6 +20,11 @@ venv\Scripts\python -m pip install --upgrade pip
 echo [2/5] Bibliotheken installieren (mehrere GB, bitte warten)...
 venv\Scripts\pip install --retries 10 -r requirements.txt || (echo pip fehlgeschlagen & pause & exit /b 1)
 
+echo [2b/5] KI-Umformulierung (lokales Sprachmodell)...
+venv\Scripts\pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu --only-binary llama-cpp-python
+if not exist models\llm mkdir models\llm
+curl -L -C - --retry 20 --retry-all-errors -o models\llm\Qwen2.5-3B-Instruct-Q4_K_M.gguf "https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf"
+
 echo [3/5] FFmpeg-DLLs laden (fuer das Stimmklon-Modul)...
 if not exist tools mkdir tools
 curl -L -C - --retry 20 --retry-all-errors -o tools\ffmpeg-shared.zip https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl-shared.zip
