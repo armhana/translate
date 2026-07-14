@@ -227,6 +227,11 @@ def _verarbeite_text(job_id, text, quell, ziel):
     _speichere_job(job_id)
 
 
+@app.post("/api/optimize")
+async def optimize(text: str = Form(...), sprache: str = Form("de")):
+    return {"text": engine.optimize_text(text, sprache)}
+
+
 @app.post("/api/text_auftrag")
 async def text_auftrag(text: str = Form(...), zielsprache: str = Form(...),
                        quellsprache: str = Form("de")):

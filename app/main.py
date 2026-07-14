@@ -223,6 +223,8 @@ class App(tk.Tk):
         self.btn_video_go = ttk.Button(row2, text="① Transkribieren + Übersetzen",
                                        style="Accent.TButton", command=self._run_video)
         self.btn_video_go.pack(side="right")
+        ttk.Button(row2, text="✨ Satz optimieren",
+                   command=self._optimize_texts).pack(side="right", padx=6)
 
         # Bedienzeilen von UNTEN verankern und VOR den Textfeldern packen
         # (frueher gepackte Widgets haben Platz-Prioritaet): bei kleinen
@@ -294,6 +296,22 @@ class App(tk.Tk):
         if p:
             self.video_path.set(p)
 
+    def _optimize_texts(self):
+        """Beide Textfelder regelbasiert glätten (Füllwörter, Wortdopplungen,
+        Zeichensetzung) — keine KI-Umformulierung, rein lokal."""
+        import locale as _loc
+        src = (_loc.getdefaultlocale()[0] or "de")[:2]
+        orig = self.txt_orig.get("1.0", "end").strip()
+        trans = self.txt_trans.get("1.0", "end").strip()
+        if orig:
+            self.txt_orig.delete("1.0", "end")
+            self.txt_orig.insert("1.0", engine.optimize_text(orig, src))
+        if trans:
+            self.txt_trans.delete("1.0", "end")
+            self.txt_trans.insert("1.0", engine.optimize_text(trans, self.video_tgt.get()))
+        self._set_status("Sätze optimiert (Füllwörter/Dopplungen entfernt). "
+                         "Für Sprachausgabe '② Vertonung erzeugen'.")
+
     def _run_video(self):
         path = self.video_path.get()
         if not path:
@@ -312,8 +330,8 @@ class App(tk.Tk):
         threading.Thread(target=self._video_worker, args=(path,), daemon=True).start()
 
     def _text_worker(self, text):
-        """Nur-Text-Auftrag: uebersetzen; Vertonung danach wie gewohnt
-        (eigene Stimme braucht allerdings eine Videodatei als Stimmprobe)."""
+        """Nur-Text-Auftrag: übersetzen. Vertonung danach mit eigener Stimme
+        (falls gespeichertes Profil vorhanden) oder Standardstimme."""
         try:
             import locale as _loc
             src_lang = (_loc.getdefaultlocale()[0] or "de")[:2]
@@ -324,8 +342,12 @@ class App(tk.Tk):
             else:
                 text_t = text
             self._set_text(self.txt_trans, text_t)
-            self._set_status("Text übersetzt — '② Vertonung erzeugen' zum Vorlesen "
-                             "(eigene Stimme braucht eine Videodatei als Stimmprobe).")
+            profil = os.path.join(engine.MODELS_DIR, "mein_stimmprofil.wav")
+            if self.use_own_voice.get() and os.path.exists(profil):
+                hinweis = "'② Vertonung erzeugen' spricht in Ihrer gespeicherten Stimme."
+            else:
+                hinweis = "'② Vertonung erzeugen' nutzt die Standardstimme (kein Stimmprofil)."
+            self._set_status("Text übersetzt — " + hinweis)
         except Exception as e:
             self._set_status(f"Fehler: {e}")
         finally:
@@ -366,12 +388,17 @@ class App(tk.Tk):
             messagebox.showwarning(APP_TITLE, "Keine Übersetzung vorhanden — erst Schritt 'Transkribieren + Übersetzen' ausführen.")
             return
         own = self.use_own_voice.get()
+        # Dauerhaftes Stimmprofil (aus dem letzten Video) — für Textaufträge
+        profil_pfad = os.path.join(engine.MODELS_DIR, "mein_stimmprofil.wav")
         if own and not self.clone_tts.available():
             messagebox.showwarning(APP_TITLE, "Stimmen-Klon-Modul (coqui-tts) ist nicht installiert — nutze neutrale Stimme.")
             own = False
-        if own and not self.video_path.get():
-            messagebox.showwarning(APP_TITLE, "Für die eigene Stimme wird das Video als Stimmreferenz gebraucht — bitte Videodatei wählen.")
-            return
+        # Eigene Stimme ohne Video: gespeichertes Profil nutzen, sonst
+        # automatisch auf die Standardstimme zurückfallen (kein Abbruch).
+        if own and not self.video_path.get() and not os.path.exists(profil_pfad):
+            self._set_status("Kein Stimmprofil vorhanden (einmal ein Video mit eigener "
+                             "Stimme verarbeiten) — nutze diesmal die Standardstimme.")
+            own = False
         geraet = self._aktives_ausgabegeraet()
         wanted_own = self.use_own_voice.get()  # Haekchen-Stand zum Zeitpunkt der Erzeugung
 
@@ -379,10 +406,13 @@ class App(tk.Tk):
             try:
                 tgt = self.video_tgt.get()
                 if own:
-                    self._set_status("Erzeuge Stimmprofil aus dem Video…")
-                    sample = engine.extract_voice_sample(
-                        self.video_path.get(),
-                        os.path.join(engine.MODELS_DIR, "stimmprofil.wav"))
+                    if self.video_path.get():
+                        self._set_status("Erzeuge Stimmprofil aus dem Video…")
+                        sample = engine.extract_voice_sample(
+                            self.video_path.get(), profil_pfad)  # bleibt gespeichert
+                    else:
+                        sample = profil_pfad  # gespeichertes Profil wiederverwenden
+                        self._set_status("Verwende Ihr gespeichertes Stimmprofil…")
                     self._set_status("Spreche in Ihrer Stimme… (erster Lauf lädt XTTS ~1,9 GB; "
                                      "die Erzeugung dauert auf CPU mehrere Minuten)")
                     xtts_lang = {"zh": "zh-cn"}.get(tgt, tgt)

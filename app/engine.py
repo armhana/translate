@@ -446,6 +446,29 @@ def mux_video_with_audio(video_path, audio_wav, out_path):
     return out_path
 
 
+def optimize_text(text, sprache="de"):
+    """Regelbasierte Satzoptimierung (offline, keine KI-Umformulierung):
+    Fuellwoerter raus, doppelte Woerter/Leerzeichen weg, Gross-/Klein-
+    schreibung nach Satzende, fehlendes Schluss-Satzzeichen ergaenzen."""
+    import re
+    fueller = {
+        "de": r"\b(äh+|ähm+|ehm+|hm+|halt|eben|sozusagen|quasi|irgendwie|nicht wahr|weißt du)\b",
+        "en": r"\b(uh+|um+|erm+|like|you know|i mean|basically|actually|sort of|kind of)\b",
+    }
+    muster = fueller.get(sprache, fueller["en"])
+    t = re.sub(muster, "", text, flags=re.IGNORECASE)
+    t = re.sub(r"\b(\w+)(\s+\1\b)+", r"\1", t, flags=re.IGNORECASE)
+    t = re.sub(r"\s+([,.;:!?])", r"\1", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    t = re.sub(r"([.!?]\s+)([a-zäöü])",
+               lambda m: m.group(1) + m.group(2).upper(), t)
+    if t:
+        t = t[0].upper() + t[1:]
+        if t[-1] not in ".!?":
+            t += "."
+    return t
+
+
 def convert_audio(wav_path, out_path):
     """WAV in das Format der Zielendung konvertieren (MP3, M4A, ...)."""
     import subprocess

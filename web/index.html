@@ -90,6 +90,7 @@
     <textarea id="uebersetzung" rows="5" style="width:100%;padding:10px;
       border:1px solid var(--line);border-radius:10px;font-size:.92rem;
       font-family:inherit;resize:vertical;"></textarea>
+    <button id="optimBtn" class="klein grau" style="margin-top:8px;">✨ Satz optimieren</button>
     <button id="neuVertonen" class="klein" style="margin-top:8px;">
       🔁 Mit Korrektur neu vertonen</button>
     <div id="textHinweis" class="status fehler hidden" style="margin-top:6px;">
@@ -334,6 +335,17 @@ audio.addEventListener("ended", () =>
 
 // Service Worker: macht die Seite als App installierbar (Windows/Android/Linux/Mac)
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
+
+document.getElementById("optimBtn").onclick = async () => {
+  const ta = document.getElementById("uebersetzung");
+  if (!ta.value.trim()) return;
+  const fd = new FormData();
+  fd.append("text", ta.value);
+  fd.append("sprache", sel.value);
+  const r = await fetch("/api/optimize", { method:"POST", body:fd });
+  ta.value = (await r.json()).text;
+  document.getElementById("textHinweis").classList.remove("hidden");
+};
 </script>
 </body>
 </html>
