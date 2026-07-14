@@ -46,6 +46,7 @@ struct ContentView: View {
     @State private var liveSaetze: [String] = []          // wartende Original-Sätze
     @State private var liveKonfig: TranslationSession.Configuration?
     @State private var liveProtokoll = ""
+    @State private var liveEigeneStimme = false  // Live in eigener Stimme?
 
     @StateObject private var sprecher = Sprecher()
     @StateObject private var mithoerer = LiveMithoerer()
@@ -147,9 +148,11 @@ struct ContentView: View {
 
                 Section("5 · Live mithören (Gespräch im Raum, YouTube, Vortrag)") {
                     Text("Hört über das Mikrofon mit und spricht jede erkannte Aussage " +
-                         "übersetzt nach — mit neutraler Standardstimme (schnell und klar). " +
+                         "übersetzt nach — standardmäßig mit neutraler Stimme (schnellste Reaktion) " +
+                         "oder auf Wunsch mit Ihrer eigenen Stimme. " +
                          "Handy-Telefonate kann iOS-Apps grundsätzlich nicht abgreifen.")
                         .font(.footnote).foregroundStyle(.secondary)
+                    Toggle("Live in meiner Stimme (langsamer)", isOn: $liveEigeneStimme)
                     Button(mithoerer.laeuft ? "■ Live-Mithören stoppen"
                                             : "▶ Live-Mithören starten") {
                         if mithoerer.laeuft {
@@ -226,7 +229,7 @@ struct ContentView: View {
                     liveProtokoll = "→ " + antwort.targetText
                     sprecher.sprichZusatz(text: antwort.targetText,
                                           sprache: zielsprache,
-                                          eigeneStimme: false)  // Live: Standardstimme
+                                          eigeneStimme: liveEigeneStimme)
                 } catch {
                     liveProtokoll = "Übersetzung fehlgeschlagen: \(error.localizedDescription)"
                 }
@@ -303,7 +306,7 @@ struct ContentView: View {
             if quellsprache == zielsprache {
                 // Gleiche Sprache: direkt neutral nachsprechen (Akzent glätten)
                 sprecher.sprichZusatz(text: satz, sprache: zielsprache,
-                                      eigeneStimme: false)
+                                      eigeneStimme: liveEigeneStimme)
             } else {
                 liveSaetze.append(satz)
                 if liveKonfig == nil {
